@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {execSync} from 'node:child_process';
+import {execFileSync, execSync} from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -202,8 +202,9 @@ function getWslVariable(variable: string): string | undefined {
     // from which the env can be access with all uppercase names.
     // The return value is a Windows Path - `C:\Program Files`.
 
-    const result = execSync(
-      `cmd.exe /c echo %${variable.toLocaleUpperCase()}%`,
+    const result = execFileSync(
+      'cmd.exe',
+      ['/c', `echo %${variable.toLocaleUpperCase()}%`],
       {
         // We need to ignore the stderr as cmd.exe
         // prints a message about wrong UNC path not supported.
@@ -238,7 +239,7 @@ function getWslLocation(channel: ChromeReleaseChannel): [string, ...string[]] {
   return windowsPath.map(path => {
     // The above command returned the Windows paths `C:\Program Files\...\chrome.exe`
     // Use the `wslpath` utility tool to transform into the mounted disk
-    return execSync(`wslpath "${path}"`).toString().trim();
+    return execFileSync('wslpath', [path]).toString().trim();
   }) as [string, ...string[]];
 }
 

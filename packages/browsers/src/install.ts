@@ -491,9 +491,6 @@ async function runSetup(installedBrowser: InstalledBrowser): Promise<void> {
       spawnSync(
         path.join(browserDir, 'setup.exe'),
         [`--configure-browser-in-directory=` + browserDir],
-        {
-          shell: true,
-        },
       );
       // TODO: Handle error here. Currently the setup.exe sometimes
       // errors although it sets the permissions correctly.

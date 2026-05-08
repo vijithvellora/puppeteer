@@ -18,7 +18,7 @@ import {
   type ServerOptions as HttpsServerOptions,
 } from 'node:https';
 import type {AddressInfo} from 'node:net';
-import {join} from 'node:path';
+import {join, resolve, sep} from 'node:path';
 import type {Duplex} from 'node:stream';
 import {gzip} from 'node:zlib';
 
@@ -281,6 +281,13 @@ export class TestServer {
       pathName = '/index.html';
     }
     const filePath = join(this.#dirPath, pathName.substring(1));
+    // Prevent path traversal: ensure the resolved path stays within #dirPath.
+    const resolvedBase = resolve(this.#dirPath) + sep;
+    if (!resolve(filePath).startsWith(resolvedBase)) {
+      response.statusCode = 403;
+      response.end('Forbidden');
+      return;
+    }
 
     if (this.#cachedPathPrefix && filePath.startsWith(this.#cachedPathPrefix)) {
       if (request.headers['if-modified-since']) {

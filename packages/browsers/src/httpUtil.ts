@@ -34,6 +34,7 @@ export function httpRequest(
   method: string,
   response: (x: http.IncomingMessage) => void,
   keepAlive = true,
+  maxRedirects = 10,
 ): http.ClientRequest {
   const options: http.RequestOptions = {
     protocol: url.protocol,
@@ -53,7 +54,43 @@ export function httpRequest(
       res.statusCode < 400 &&
       res.headers.location
     ) {
-      httpRequest(new URL(res.headers.location), method, response);
+      if (maxRedirects === 0) {
+        response(
+          Object.assign(res, {
+            statusCode: 400,
+            statusMessage: 'Too many redirects',
+          }),
+        );
+        res.resume();
+        return;
+      }
+      // Resolve relative redirects and restrict cross-origin redirects to
+      // prevent a compromised server from redirecting binary downloads to an
+      // attacker-controlled host.
+      let redirectUrl: URL;
+      try {
+        redirectUrl = new URL(res.headers.location, url);
+      } catch {
+        response(
+          Object.assign(res, {
+            statusCode: 400,
+            statusMessage: 'Invalid redirect URL',
+          }),
+        );
+        res.resume();
+        return;
+      }
+      if (redirectUrl.hostname !== url.hostname) {
+        response(
+          Object.assign(res, {
+            statusCode: 400,
+            statusMessage: 'Cross-origin redirect blocked',
+          }),
+        );
+        res.resume();
+        return;
+      }
+      httpRequest(redirectUrl, method, response, keepAlive, maxRedirects - 1);
       // consume response data to free up memory
       // And prevents the connection from being kept alive
       res.resume();

@@ -106,7 +106,6 @@ async function executeCommand(
     const child = spawn(executable, args, {
       cwd: path,
       stdio: 'inherit',
-      shell: true,
       env: {
         ...process.env,
         ...env,
